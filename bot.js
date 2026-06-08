@@ -186,13 +186,13 @@ bot.onText(/\/get|📱 Get Numbers/, async (msg) => {
     });
 
     const list = Object.keys(numberList)
-      .map((num, i) => `${i+1}. ${num}`)
+      .map((num, i) => `${i+1}. <code>${num}</code>`)
       .join('\n');
 
     bot.sendMessage(
       msg.chat.id,
-      `✅ *Nomor Berhasil Diambil*\n\n${list}`,
-      { parse_mode: 'Markdown' }
+      `✅ <b>Nomor Berhasil Diambil</b>\n\n${list}`,
+      { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '📋 Copy', callback_data: 'copy_numbers' }]] } }
     );
 
     stats.success++;
@@ -209,7 +209,7 @@ bot.onText(/\/get|📱 Get Numbers/, async (msg) => {
 bot.onText(/\/otp|🔐 Get OTP/, (msg) => {
   const numWithOtp = Object.entries(numberList)
     .filter(([num, data]) => data.otp)
-    .map(([num, data], i) => `${i+1}. ${num}\n   OTP: \`${data.otp}\``)
+    .map(([num, data], i) => `${i+1}. <code>${num}</code>\n   OTP: <code>${data.otp}</code>`)
     .join('\n\n');
 
   if (!numWithOtp) {
@@ -217,14 +217,21 @@ bot.onText(/\/otp|🔐 Get OTP/, (msg) => {
   }
 
   const message = `
-🔐 *OTP TERBARU*
+🔐 <b>OTP TERBARU</b>
 
 ${numWithOtp}
 
 ⏱️ Waktu: ${new Date().toLocaleString()}
   `;
 
-  bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+  bot.sendMessage(msg.chat.id, message, { 
+    parse_mode: 'HTML',
+    reply_markup: { 
+      inline_keyboard: [
+        [{ text: '📋 Copy OTP', callback_data: 'copy_otp' }]
+      ]
+    }
+  });
 });
 
 // Statistics
@@ -232,7 +239,7 @@ bot.onText(/\/stats|📊 Statistics/, (msg) => {
   const rate = stats.total ? Math.floor((stats.success / stats.total) * 100) : 0;
 
   const stats_msg = `
-📊 *STATISTIK*
+📊 <b>STATISTIK</b>
 
 📈 Total: ${stats.total}
 ✅ Success: ${stats.success}
@@ -242,7 +249,7 @@ bot.onText(/\/stats|📊 Statistics/, (msg) => {
 📅 Tanggal: ${stats.today}
   `;
 
-  bot.sendMessage(msg.chat.id, stats_msg, { parse_mode: 'Markdown' });
+  bot.sendMessage(msg.chat.id, stats_msg, { parse_mode: 'HTML' });
 });
 
 // Database export
@@ -267,13 +274,20 @@ bot.onText(/\/numbers/, (msg) => {
     return bot.sendMessage(msg.chat.id, '❌ Belum ada nomor');
   }
 
-  let list = `📱 *DAFTAR NOMOR* (${nums.length})\n\n`;
+  let list = `📱 <b>DAFTAR NOMOR</b> (${nums.length})\n\n`;
   nums.forEach(([num, data], i) => {
     const otp = data.otp ? `✅ ${data.otp}` : '⏳ Waiting';
-    list += `${i+1}. ${num}\n   ${otp}\n\n`;
+    list += `${i+1}. <code>${num}</code>\n   ${otp}\n\n`;
   });
 
-  bot.sendMessage(msg.chat.id, list, { parse_mode: 'Markdown' });
+  bot.sendMessage(msg.chat.id, list, { 
+    parse_mode: 'HTML',
+    reply_markup: { 
+      inline_keyboard: [
+        [{ text: '📋 Copy Semua', callback_data: 'copy_all_numbers' }]
+      ]
+    }
+  });
 });
 
 // Clear numbers
@@ -315,6 +329,59 @@ bot.on('message', (msg) => {
     } else if (text === '❓ Help') {
       bot.emit('text', msg, [null, null]);
     }
+  }
+});
+
+// =====================================
+// CALLBACK QUERY - COPY BUTTON
+// =====================================
+
+bot.on('callback_query', (query) => {
+  const chatId = query.message.chat.id;
+  const messageId = query.message.message_id;
+  const data = query.data;
+
+  if (data === 'copy_numbers') {
+    const nums = Object.keys(numberList)
+      .map(num => num)
+      .join('\n');
+    
+    if (!nums) {
+      return bot.answerCallbackQuery(query.id, { text: '❌ Belum ada nomor', show_alert: true });
+    }
+
+    bot.sendMessage(chatId, `<code>${nums}</code>`, { parse_mode: 'HTML' });
+    bot.answerCallbackQuery(query.id, { text: '✅ Disalin ke clipboard' });
+    log('Numbers copied');
+  }
+
+  if (data === 'copy_otp') {
+    const otps = Object.entries(numberList)
+      .filter(([num, data]) => data.otp)
+      .map(([num, data]) => `${num}: ${data.otp}`)
+      .join('\n');
+    
+    if (!otps) {
+      return bot.answerCallbackQuery(query.id, { text: '❌ Belum ada OTP', show_alert: true });
+    }
+
+    bot.sendMessage(chatId, `<code>${otps}</code>`, { parse_mode: 'HTML' });
+    bot.answerCallbackQuery(query.id, { text: '✅ OTP disalin' });
+    log('OTP copied');
+  }
+
+  if (data === 'copy_all_numbers') {
+    const nums = Object.keys(numberList)
+      .map(num => num)
+      .join('\n');
+    
+    if (!nums) {
+      return bot.answerCallbackQuery(query.id, { text: '❌ Belum ada nomor', show_alert: true });
+    }
+
+    bot.sendMessage(chatId, `<code>${nums}</code>`, { parse_mode: 'HTML' });
+    bot.answerCallbackQuery(query.id, { text: '✅ Semua nomor disalin' });
+    log('All numbers copied');
   }
 });
 
@@ -362,7 +429,7 @@ setInterval(() => {
 
 setTimeout(() => {
   const msg = `
-🟢 *BOT ONLINE*
+🟢 <b>BOT ONLINE</b>
 
 ✅ Indra Bot IVAS is running
 🤖 Ready to receive commands
@@ -373,7 +440,7 @@ setTimeout(() => {
 Type /help for commands
   `;
 
-  bot.sendMessage(CHAT_ID, msg, { parse_mode: 'Markdown' }).catch(console.error);
+  bot.sendMessage(CHAT_ID, msg, { parse_mode: 'HTML' }).catch(console.error);
   log('Startup message sent');
 }, 1000);
 
