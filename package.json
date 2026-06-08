@@ -1,0 +1,22 @@
+{
+  "name": "indra-bot-ivas",
+  "version": "1.0.0",
+  "description": "Telegram Bot for IVAS SMS Management",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": ["telegram", "bot", "ivas", "sms"],
+  "author": "wanditaryo9-cell",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "dotenv": "^16.3.1",
+    "node-telegram-bot-api": "^0.62.0",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
